@@ -2,10 +2,13 @@ import { RequestHandler } from "express";
 import NoteModel from "../models/note";
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
+import { assertIsDefined } from "../util/assertIsDefined";
 
 export const getNotes: RequestHandler = async (req, res, next) => {
   try {
-    const notes = await NoteModel.find().exec();
+    const authenticatedUserId = req.session.userId;
+    assertIsDefined(authenticatedUserId);
+    const notes = await NoteModel.find({ userId: authenticatedUserId }).exec();
     res.status(200).json(notes);
   } catch (error) {
     next(error);
@@ -14,6 +17,8 @@ export const getNotes: RequestHandler = async (req, res, next) => {
 
 export const getNote: RequestHandler = async (req, res, next) => {
   try {
+    const authenticatedUserId = req.session.userId;
+    assertIsDefined(authenticatedUserId);
     const { noteId } = req.params;
     if (!mongoose.isValidObjectId(noteId)) {
       throw createHttpError(400, "Id inválido");
@@ -24,6 +29,12 @@ export const getNote: RequestHandler = async (req, res, next) => {
     if (!note) {
       throw createHttpError(404, "Note não encontrada");
     }
+
+    if (!note.userId.equals(authenticatedUserId))
+      throw createHttpError(
+        401,
+        "Usuário não possui permissão para acessar essa informação"
+      );
 
     res.status(200).json(note);
   } catch (error) {
@@ -43,12 +54,15 @@ export const createNotes: RequestHandler<
   unknown
 > = async (req, res, next) => {
   try {
+    const authenticatedUserId = req.session.userId;
+    assertIsDefined(authenticatedUserId);
     const { title, text } = req.body;
     if (!title) {
       throw createHttpError(400, "O Titúlo é obrigatório");
     }
 
     const newNote = await NoteModel.create({
+      userId: authenticatedUserId,
       title,
       text,
     });
@@ -74,6 +88,8 @@ export const updateNote: RequestHandler<
   unknown
 > = async (req, res, next) => {
   try {
+    const authenticatedUserId = req.session.userId;
+    assertIsDefined(authenticatedUserId);
     const { noteId } = req.params;
     const { title: newTitle, text: newText } = req.body;
 
@@ -91,6 +107,12 @@ export const updateNote: RequestHandler<
       throw createHttpError(404, "Note não encontrada");
     }
 
+    if (!note.userId.equals(authenticatedUserId))
+      throw createHttpError(
+        401,
+        "Usuário não possui permissão para acessar essa informação"
+      );
+
     note.title = newTitle;
     note.text = newText;
 
@@ -104,6 +126,8 @@ export const updateNote: RequestHandler<
 
 export const deleteNote: RequestHandler = async (req, res, next) => {
   try {
+    const authenticatedUserId = req.session.userId;
+    assertIsDefined(authenticatedUserId);
     const { noteId } = req.params;
 
     if (!mongoose.isValidObjectId(noteId)) {
@@ -115,6 +139,12 @@ export const deleteNote: RequestHandler = async (req, res, next) => {
     if (!note) {
       throw createHttpError(404, "Note não encontrada");
     }
+
+    if (!note.userId.equals(authenticatedUserId))
+      throw createHttpError(
+        401,
+        "Usuário não possui permissão para acessar essa informação"
+      );
 
     await note.deleteOne();
 

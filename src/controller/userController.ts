@@ -7,9 +7,6 @@ export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
   try {
     const { userId: authenticatedUser } = req.session;
 
-    if (!authenticatedUser)
-      throw createHttpError(401, "Usuário não autenticado");
-
     const user = await UserModel.findById(authenticatedUser)
       .select("+email")
       .exec();
