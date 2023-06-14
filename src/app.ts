@@ -14,8 +14,15 @@ const app = express();
 
 app.use(morgan("dev"));
 
+app.use(
+  cors({
+    credentials: true,
+    origin: ["http://localhost:3000", env.FRONT_URL],
+    methods: ["POST", "PUT", "PATCH", "GET", "OPTIONS", "HEAD", "DELETE"],
+  })
+);
+
 app.use(express.json());
-app.use(cors());
 
 app.use(
   session({
