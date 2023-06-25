@@ -7,7 +7,7 @@ const appointmentSchema = new Schema(
     phone: { type: String, required: true },
     cpf: { type: String, required: true },
     interval: { type: String, required: true },
-    day: { type: String, required: true },
+    day: { type: Date, required: true },
   },
   {
     timestamps: true,
