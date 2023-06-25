@@ -7,6 +7,7 @@ import MongoStore from "connect-mongo";
 import createHttpError, { isHttpError } from "http-errors";
 import notesRoutes from "./routes/notes";
 import usersRoutes from "./routes/users";
+import appointmentsRoutes from "./routes/appointments";
 import env from "./util/validateEnv";
 import { requiresAuth } from "./middleware/auth";
 
@@ -41,6 +42,7 @@ app.use(
 
 app.use("/api/notes", requiresAuth, notesRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/appointments", appointmentsRoutes);
 
 app.use((req, res, next) => {
   next(createHttpError(404, "Rota não encontrada"));
