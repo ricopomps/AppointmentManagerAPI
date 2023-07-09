@@ -49,7 +49,6 @@ export const createAppointment: RequestHandler<
 > = async (req, res, next) => {
   try {
     const { name, email, phone, cpf, interval, day } = req.body;
-    console.log(req.body);
     const newAppointment = await AppointmentModel.create({
       name,
       email,
@@ -58,7 +57,6 @@ export const createAppointment: RequestHandler<
       interval,
       day,
     });
-    console.log("DAY", day, typeof day);
     res.status(201).json(newAppointment);
   } catch (error) {
     next(error);
