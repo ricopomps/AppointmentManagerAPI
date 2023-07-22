@@ -39,6 +39,8 @@ interface createAppointmentBody {
   cpf?: string;
   interval?: string;
   day?: Date;
+  clinicId?: string;
+  dentistId?: string;
 }
 
 export const createAppointment: RequestHandler<
@@ -48,7 +50,8 @@ export const createAppointment: RequestHandler<
   unknown
 > = async (req, res, next) => {
   try {
-    const { name, email, phone, cpf, interval, day } = req.body;
+    const { name, email, phone, cpf, interval, day, clinicId, dentistId } =
+      req.body;
     const newAppointment = await AppointmentModel.create({
       name,
       email,
@@ -56,6 +59,8 @@ export const createAppointment: RequestHandler<
       cpf,
       interval,
       day,
+      clinicId,
+      dentistId,
     });
     res.status(201).json(newAppointment);
   } catch (error) {
