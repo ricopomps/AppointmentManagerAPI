@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import ClinicModel from "../models/clinic";
 import UserModel, { UserType } from "../models/user";
 import createHttpError from "http-errors";
+import mongoose from "mongoose";
 
 export const getClinics: RequestHandler = async (req, res, next) => {
   try {
@@ -86,6 +87,52 @@ export const addUserToClinic: RequestHandler<
     const updateClinic = await clinic.save();
 
     res.status(200).json(updateClinic);
+  } catch (error) {
+    next(error);
+  }
+};
+
+interface UpdateClinicParams {
+  clinicId?: string;
+}
+
+interface UpdateClinicBody {
+  name?: string;
+}
+
+export const updateClinic: RequestHandler<
+  UpdateClinicParams,
+  unknown,
+  UpdateClinicBody,
+  unknown
+> = async (req, res, next) => {
+  try {
+    const { clinicId } = req.params;
+    const { name: newName } = req.body;
+
+    if (!mongoose.isValidObjectId(clinicId)) {
+      throw createHttpError(400, "Id inválido");
+    }
+
+    if (!newName) {
+      throw createHttpError(400, "O Titúlo é obrigatório");
+    }
+
+    const clinic = await ClinicModel.findById(clinicId).exec();
+
+    if (!clinic) {
+      throw createHttpError(404, "Clinic não encontrada");
+    }
+
+    clinic.name = newName;
+
+    const updatedClinic = await clinic.save();
+
+    const dentists = await UserModel.find({
+      _id: { $in: clinic.dentists },
+    }).exec();
+
+    res.status(200).json({ ...updatedClinic.toObject(), dentists });
   } catch (error) {
     next(error);
   }

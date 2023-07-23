@@ -101,3 +101,32 @@ export const logout: RequestHandler = (req, res, next) => {
     }
   });
 };
+
+interface updateUserBody {
+  username?: string;
+  email?: string;
+}
+
+export const updateUser: RequestHandler<
+  unknown,
+  unknown,
+  updateUserBody,
+  unknown
+> = async (req, res, next) => {
+  try {
+    const { username, email } = req.body;
+
+    const user = await UserModel.findOne({ username }).exec();
+
+    if (!user) throw createHttpError(404, "Usuário não encontrado");
+
+    user.username = username ?? user.username;
+    user.email = email ?? user.email;
+
+    const updatedUser = await user.save();
+
+    res.status(201).json(updatedUser);
+  } catch (error) {
+    next(error);
+  }
+};
