@@ -59,8 +59,8 @@ export const createClinics: RequestHandler<
 };
 
 interface addUserToClinicBody {
-  clinicId?: string;
-  userId?: string;
+  clinicId?: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId;
 }
 
 export const addUserToClinic: RequestHandler<
@@ -74,19 +74,49 @@ export const addUserToClinic: RequestHandler<
 
     const clinic = await ClinicModel.findById(clinicId).exec();
 
-    if (!clinic) throw createHttpError(404, "Clinica não encontrada");
+    if (!clinic) throw createHttpError(404, "Clínica não encontrada");
+
+    if (userId && clinic.dentists.includes(userId))
+      throw createHttpError(401, "Usuário já cadastrado nessa clínica");
 
     const user = await UserModel.findById(userId).exec();
 
     if (!user) throw createHttpError(404, "Usuário não encontrado");
-    if (user.userType !== UserType.dentist)
+    if (
+      !(user.userType === UserType.dentist || user.userType === UserType.admin)
+    )
       throw createHttpError(400, "Apenas dentistas podem ser adicionados");
 
     clinic.dentists = [...clinic.dentists, user._id];
 
-    const updateClinic = await clinic.save();
+    await clinic.save();
 
-    res.status(200).json(updateClinic);
+    const updatedClinicAggregated = await ClinicModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(clinicId),
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "dentists",
+          foreignField: "_id",
+          as: "dentists",
+        },
+      },
+      { $unwind: { path: "$dentists" } },
+      { $unset: "dentists.password" },
+      {
+        $group: {
+          _id: "$_id",
+          dentists: { $push: "$dentists" },
+          name: { $first: "$name" },
+        },
+      },
+    ]).exec();
+
+    res.status(200).json(updatedClinicAggregated[0]);
   } catch (error) {
     next(error);
   }

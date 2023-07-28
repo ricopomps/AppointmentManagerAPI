@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import createHttpError from "http-errors";
 import bcrypt from "bcrypt";
-import UserModel from "../models/user";
+import UserModel, { UserType } from "../models/user";
 
 export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
   try {
@@ -11,6 +11,15 @@ export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
       .select("+email")
       .exec();
     res.status(200).json(user);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllUsers: RequestHandler = async (req, res, next) => {
+  try {
+    const users = await UserModel.find().exec();
+    res.status(200).json(users);
   } catch (error) {
     next(error);
   }
@@ -102,30 +111,52 @@ export const logout: RequestHandler = (req, res, next) => {
   });
 };
 
-interface updateUserBody {
+interface UpdateUserBody {
   username?: string;
   email?: string;
+  userType?: UserType;
+}
+
+interface UpdateUserParams {
+  userId?: string;
 }
 
 export const updateUser: RequestHandler<
+  UpdateUserParams,
   unknown,
-  unknown,
-  updateUserBody,
+  UpdateUserBody,
   unknown
 > = async (req, res, next) => {
   try {
-    const { username, email } = req.body;
+    const { username, email, userType } = req.body;
+    const { userId } = req.params;
 
-    const user = await UserModel.findOne({ username }).exec();
+    const user = await UserModel.findById(userId).exec();
 
     if (!user) throw createHttpError(404, "Usuário não encontrado");
 
+    if (userType && !Object.values(UserType).includes(userType))
+      throw createHttpError(401, "Tipo de usuário inválido");
+
     user.username = username ?? user.username;
     user.email = email ?? user.email;
+    user.userType = userType ?? user.userType;
 
     const updatedUser = await user.save();
 
     res.status(201).json(updatedUser);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getDentists: RequestHandler = async (req, res, next) => {
+  try {
+    const dentists = await UserModel.find({
+      userType: UserType.dentist || UserType.admin,
+    }).exec();
+
+    res.status(200).json(dentists);
   } catch (error) {
     next(error);
   }
