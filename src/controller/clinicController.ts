@@ -85,9 +85,75 @@ export const addUserToClinic: RequestHandler<
     if (
       !(user.userType === UserType.dentist || user.userType === UserType.admin)
     )
-      throw createHttpError(400, "Apenas dentistas podem ser adicionados");
+      throw createHttpError(401, "Apenas dentistas podem ser adicionados");
 
     clinic.dentists = [...clinic.dentists, user._id];
+
+    await clinic.save();
+
+    const updatedClinicAggregated = await ClinicModel.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(clinicId),
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "dentists",
+          foreignField: "_id",
+          as: "dentists",
+        },
+      },
+      { $unwind: { path: "$dentists" } },
+      { $unset: "dentists.password" },
+      {
+        $group: {
+          _id: "$_id",
+          dentists: { $push: "$dentists" },
+          name: { $first: "$name" },
+        },
+      },
+    ]).exec();
+
+    res.status(200).json(updatedClinicAggregated[0]);
+  } catch (error) {
+    next(error);
+  }
+};
+
+interface removeUserFromClinicBody {
+  clinicId?: mongoose.Types.ObjectId;
+  userId?: mongoose.Types.ObjectId;
+}
+
+export const removeUserFromClinic: RequestHandler<
+  unknown,
+  unknown,
+  removeUserFromClinicBody,
+  unknown
+> = async (req, res, next) => {
+  try {
+    const { clinicId, userId } = req.body;
+
+    const clinic = await ClinicModel.findById(clinicId).exec();
+
+    if (!clinic) throw createHttpError(404, "Clínica não encontrada");
+
+    if (userId && !clinic.dentists.includes(userId))
+      throw createHttpError(401, "Usuário não possui cadastrado nessa clínica");
+
+    const user = await UserModel.findById(userId).exec();
+
+    if (!user) throw createHttpError(404, "Usuário não encontrado");
+    if (
+      !(user.userType === UserType.dentist || user.userType === UserType.admin)
+    )
+      throw createHttpError(401, "Apenas dentistas podem ser removidos");
+
+    clinic.dentists = clinic.dentists.filter(
+      (dentist) => !dentist._id.equals(new mongoose.Types.ObjectId(userId))
+    );
 
     await clinic.save();
 
