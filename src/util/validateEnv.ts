@@ -5,4 +5,6 @@ export default cleanEnv(process.env, {
   PORT: port(),
   SESSION_SECRET: str(),
   FRONT_URL: str(),
+  ACCESS_TOKEN_SECRET: str(),
+  REFRESH_TOKEN_SECRET: str(),
 });

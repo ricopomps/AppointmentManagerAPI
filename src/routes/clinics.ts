@@ -1,17 +1,12 @@
 import express from "express";
 import * as ClinicsController from "../controller/clinicController";
-import { requiresAuth } from "../middleware/auth";
-
+import { verifyJWT } from "../middleware/verifyJWT";
 const router = express.Router();
 
 router.get("/", ClinicsController.getClinics);
-router.post("/", requiresAuth, ClinicsController.createClinics);
-router.patch("/adduser", requiresAuth, ClinicsController.addUserToClinic);
-router.patch(
-  "/removeuser",
-  requiresAuth,
-  ClinicsController.removeUserFromClinic
-);
-router.patch("/:clinicId", requiresAuth, ClinicsController.updateClinic);
+router.post("/", verifyJWT, ClinicsController.createClinics);
+router.patch("/adduser", verifyJWT, ClinicsController.addUserToClinic);
+router.patch("/removeuser", verifyJWT, ClinicsController.removeUserFromClinic);
+router.patch("/:clinicId", verifyJWT, ClinicsController.updateClinic);
 
 export default router;

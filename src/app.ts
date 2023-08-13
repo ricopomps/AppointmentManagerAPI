@@ -9,8 +9,9 @@ import notesRoutes from "./routes/notes";
 import usersRoutes from "./routes/users";
 import clinicsRoutes from "./routes/clinics";
 import appointmentsRoutes from "./routes/appointments";
+import authRoutes from "./routes/auth";
 import env from "./util/validateEnv";
-import { requiresAuth } from "./middleware/auth";
+import { verifyJWT } from "./middleware/verifyJWT";
 
 const app = express();
 
@@ -42,10 +43,11 @@ app.use(
   })
 );
 
-app.use("/api/notes", requiresAuth, notesRoutes);
+app.use("/api/notes", verifyJWT, notesRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/appointments", appointmentsRoutes);
 app.use("/api/clinics", clinicsRoutes);
+app.use("/api/auth", authRoutes);
 
 app.use((req, res, next) => {
   next(createHttpError(404, "Rota não encontrada"));
