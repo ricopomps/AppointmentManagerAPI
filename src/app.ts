@@ -4,6 +4,7 @@ import cors from "cors";
 import express, { NextFunction, Response, Request } from "express";
 import session from "express-session";
 import MongoStore from "connect-mongo";
+import cookieParser from "cookie-parser";
 import createHttpError, { isHttpError } from "http-errors";
 import notesRoutes from "./routes/notes";
 import usersRoutes from "./routes/users";
@@ -34,7 +35,6 @@ app.use(
     saveUninitialized: false,
     cookie: {
       maxAge: 60 * 60 * 1000,
-      sameSite: "lax",
     },
     rolling: true,
     store: MongoStore.create({
@@ -42,6 +42,8 @@ app.use(
     }),
   })
 );
+
+app.use(cookieParser());
 
 app.use("/api/notes", verifyJWT, notesRoutes);
 app.use("/api/users", usersRoutes);
