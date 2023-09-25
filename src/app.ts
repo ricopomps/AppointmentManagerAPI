@@ -1,70 +1,46 @@
-import "dotenv/config";
-import morgan from "morgan";
 import cors from "cors";
-import express, { NextFunction, Response, Request } from "express";
+import "dotenv/config";
+import express from "express";
 import session from "express-session";
-import MongoStore from "connect-mongo";
-import cookieParser from "cookie-parser";
-import createHttpError, { isHttpError } from "http-errors";
-import notesRoutes from "./routes/notes";
-import usersRoutes from "./routes/users";
-import clinicsRoutes from "./routes/clinics";
-import appointmentsRoutes from "./routes/appointments";
-import authRoutes from "./routes/auth";
-import env from "./util/validateEnv";
-import { verifyJWT } from "./middleware/verifyJWT";
+import createHttpError from "http-errors";
+import morgan from "morgan";
+import passport from "passport";
+import "./config/passport";
+import sessionConfig from "./config/session";
+import env from "./env";
+import errorHandler from "./middlewares/errorHandler";
+import blogPostRoutes from "./routes/blogPosts";
+import commentRoutes from "./routes/comments";
+import userRoutes from "./routes/users";
 
 const app = express();
 
-app.use(morgan("dev"));
-
-app.use(
-  cors({
-    credentials: true,
-    origin: ["http://localhost:3000", env.FRONT_URL],
-    methods: ["POST", "PUT", "PATCH", "GET", "OPTIONS", "HEAD", "DELETE"],
-  })
-);
+if (env.NODE_ENV === "production") {
+  app.set("trust proxy", true);
+  app.use(morgan("combined"));
+} else {
+  app.use(morgan("dev"));
+}
 
 app.use(express.json());
 
 app.use(
-  session({
-    secret: env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 60 * 60 * 1000,
-    },
-    rolling: true,
-    store: MongoStore.create({
-      mongoUrl: env.MONGO_CONNECTION_STRING,
-    }),
+  cors({
+    origin: env.FRONT_URL,
+    credentials: true,
   })
 );
 
-app.use(cookieParser());
+app.use(session(sessionConfig));
 
-app.use("/api/notes", verifyJWT, notesRoutes);
-app.use("/api/users", usersRoutes);
-app.use("/api/appointments", appointmentsRoutes);
-app.use("/api/clinics", clinicsRoutes);
-app.use("/api/auth", authRoutes);
+app.use(passport.authenticate("session"));
 
-app.use((req, res, next) => {
-  next(createHttpError(404, "Rota não encontrada"));
-});
+app.use("/posts", blogPostRoutes);
+app.use("/users", userRoutes);
+app.use("/comments", commentRoutes);
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-app.use((error: unknown, req: Request, res: Response, next: NextFunction) => {
-  console.error(error);
-  let errorMessage = "Um erro inesperado aconteceu";
-  let statusCode = 500;
-  if (isHttpError(error)) {
-    statusCode = error.status;
-    errorMessage = error.message;
-  }
-  res.status(statusCode).json({ error: errorMessage });
-});
+app.use((req, res, next) => next(createHttpError(404, "Endpoint not found")));
+
+app.use(errorHandler);
 
 export default app;
