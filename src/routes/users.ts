@@ -21,6 +21,8 @@ const router = express.Router();
 
 router.get("/me", requiresAuth, UsersController.getAuthenticatedUser);
 
+router.get("/dentists", UsersController.findDentists);
+
 router.patch(
   "/me",
   requiresAuth,

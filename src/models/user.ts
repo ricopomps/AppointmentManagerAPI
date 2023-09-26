@@ -1,5 +1,11 @@
 import mongoose, { InferSchemaType, Schema, model } from "mongoose";
 
+export enum UserType {
+  default = "Usuario",
+  dentist = "Dentista",
+  admin = "Administrador",
+}
+
 const userSchema = new Schema(
   {
     username: { type: String, unique: true, sparse: true },
@@ -10,6 +16,12 @@ const userSchema = new Schema(
     password: { type: String, select: false },
     googleId: { type: String, unique: true, sparse: true, select: false },
     githubId: { type: String, unique: true, sparse: true, select: false },
+    userType: {
+      type: String,
+      required: true,
+      default: UserType.default,
+      enum: Object.values(UserType),
+    },
   },
   { timestamps: true }
 );

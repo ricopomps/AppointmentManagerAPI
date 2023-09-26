@@ -1,6 +1,6 @@
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
-import UserModel, { User } from "../models/user";
+import UserModel, { User, UserType } from "../models/user";
 import { UpdateUserBody } from "../validation/users";
 
 export interface IUserRepository {
@@ -22,6 +22,8 @@ export interface IUserRepository {
     { username, displayName, about }: UpdateUserBody,
     profilePicDestinationPath?: string
   ): Promise<User>;
+
+  findUsersByType(userType: UserType): Promise<User[]>;
 }
 
 export default class UserRepository implements IUserRepository {
@@ -81,5 +83,11 @@ export default class UserRepository implements IUserRepository {
     ).exec();
 
     return updatedUser as User;
+  }
+
+  async findUsersByType(userType: UserType): Promise<User[]> {
+    const users = await UserModel.find({ userType }).exec();
+
+    return users;
   }
 }

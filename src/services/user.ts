@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
-import { User } from "../models/user";
+import { User, UserType } from "../models/user";
 import EmailVerificationTokenRepository, {
   IEmailVerificationTokenRepository,
 } from "../repositories/emailVerificationToken";
@@ -21,6 +21,8 @@ export interface IUserService {
     body: UpdateUserBody,
     profilePic?: Express.Multer.File
   ): Promise<User>;
+
+  findUserByType(userType: UserType): Promise<User[]>;
 }
 
 export default class UserService implements IUserService {
@@ -104,5 +106,11 @@ export default class UserService implements IUserService {
     );
 
     return updatedUser;
+  }
+
+  async findUserByType(userType: UserType): Promise<User[]> {
+    const users = await this.userRepository.findUsersByType(userType);
+
+    return users;
   }
 }

@@ -4,8 +4,7 @@ import { RequestHandler } from "express";
 import createHttpError from "http-errors";
 import EmailVerificationToken from "../models/emailVerificationToken";
 import PasswordResetToken from "../models/passwordResetToken";
-import UserModel from "../models/user";
-import FileService, { IFileService } from "../services/file";
+import UserModel, { UserType } from "../models/user";
 import UserService, { IUserService } from "../services/user";
 import assertIsDefined from "../utils/assertIsDefined";
 import { destroyAllActiveSesionsForUser } from "../utils/auth";
@@ -17,7 +16,6 @@ import {
   requestVerificationCodeBody,
 } from "../validation/users";
 
-const fileService: IFileService = new FileService();
 const userService: IUserService = new UserService();
 
 export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
@@ -207,6 +205,16 @@ export const resetPassword: RequestHandler<
       if (error) throw error;
       res.status(200).json(user);
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const findDentists: RequestHandler = async (req, res, next) => {
+  try {
+    const users = await userService.findUserByType(UserType.dentist);
+
+    res.status(200).json(users);
   } catch (error) {
     next(error);
   }
